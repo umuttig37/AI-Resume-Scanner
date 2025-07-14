@@ -5,7 +5,7 @@ import os
 from backend.app.pdf_parser import extract_text_from_pdf
 from dotenv import load_dotenv
 import requests
-from .config import HF_API_TOKEN, HF_MODEL
+from .config import HF_API_TOKEN, HF_MODEL, SECTION_WEIGHTS
 
 load_dotenv()
 
@@ -19,43 +19,74 @@ app.add_middleware(
 )
 
 
-def analyze_resume_with_ai(text: str) -> str:
+def analyze_resume_with_ai(text: str) -> dict:
     API_URL = "https://api-inference.huggingface.co/models/facebook/bart-large-mnli"
     headers = {"Authorization": f"Bearer {HF_API_TOKEN}"}
 
     payload = {
-        "inputs": text[:1500],     #max 1500 characters
+        "inputs": text[:1500],  # max 1500 characters
         "parameters": {
-            "candidate_labels": [
-                "Technical Skills",
-                "Work Experience",
-                "Education",
-                "Projects",
-                "Certifications"
-            ],
+            "candidate_labels": list(SECTION_WEIGHTS.keys()),
             "multi_label": True
         }
     }
 
     try:
-        response = requests.post(API_URL, headers=headers, json=payload)
+        # API request
+        response = requests.post(
+            API_URL,
+            headers=headers,
+            json=payload,
+            timeout=30
+        )
+
         if response.status_code == 200:
             results = response.json()
 
-            # analysis formatting
-            analysis = []
-            for label, score in zip(results['labels'], results['scores']):
-                if score > 0.5:
-                    analysis.append(f"{label}: {score:.0%} completeness")
+            section_scores = {
+                label: results['scores'][i] if i < len(results['scores']) else 0.0
+                for i, label in enumerate(SECTION_WEIGHTS.keys())
+            }
 
-            if not analysis:
-                return "Analysis: Resume sections need significant improvement"
+            return {
+                "section_scores": section_scores,
+                "ats_score": calculate_ats_score(section_scores),
+                "analysis": format_analysis(section_scores),
+                "error": None
+            }
 
-            return "Resume Section Analysis:\n" + "\n".join(analysis)
+        return {
+            "section_scores": {},
+            "ats_score": 0,
+            "analysis": "",
+            "error": f"huggingFace API Error ({response.status_code}): {response.text[:200]}"
+        }
 
-        return f"Analysis failed (HTTP {response.status_code}): {response.text[:200]}"
     except Exception as e:
-        return f"Analysis error: {str(e)}"
+        return {
+            "section_scores": {},
+            "ats_score": 0,
+            "analysis": "",
+            "error": f"analysis failed: {str(e)}"
+        }
+
+
+def calculate_ats_score(section_scores: dict) -> int:
+    return min(100, int(sum(
+        score * SECTION_WEIGHTS.get(label, 0)
+        for label, score in section_scores.items()
+    ) * 100))
+
+def format_analysis(scores: dict) -> str:
+    analysis = []
+    for section, score in scores.items():
+        if score >= 0.7:
+            analysis.append(f"strong {section} ({int(score*100)}%)")
+        elif score >= 0.4:
+            analysis.append(f"medium {section} ({int(score*100)}%)")
+        else:
+            analysis.append(f"weak {section} ({int(score*100)}%)")
+    return "resume analysis:\n" + "\n".join(analysis)
 
 @app.post("/upload")
 async def upload_pdf(file: UploadFile = File(...)):
@@ -70,15 +101,16 @@ async def upload_pdf(file: UploadFile = File(...)):
             tmp_path = tmp.name
 
         text = extract_text_from_pdf(tmp_path)
-        analysis = analyze_resume_with_ai(text)
         os.unlink(tmp_path)
+        analysis = analyze_resume_with_ai(text)
+
+        if analysis.get("error"):
+            return {"status": "error", "message": analysis["error"]}
 
         return {
             "filename": file.filename,
-            "content_type": file.content_type,
-            "size": len(contents),
             "preview": text[:200] + "..." if len(text) > 200 else text,
-            "analysis": analysis
+            **analysis
         }
 
     except Exception as e:
