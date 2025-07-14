@@ -20,33 +20,42 @@ app.add_middleware(
 
 
 def analyze_resume_with_ai(text: str) -> str:
-    #huggingface free api to analyze pdf files
-    API_URL = f"https://api-inference.huggingface.co/models/{HF_MODEL}"
+    API_URL = "https://api-inference.huggingface.co/models/facebook/bart-large-mnli"
     headers = {"Authorization": f"Bearer {HF_API_TOKEN}"}
 
-    prompt = f"""
-    analyze this resume for ATS compatibility and provide:
-    1. missing keywords
-    2. formatting improvements
-    3. ATS score (0-100)
-    4. top 3 action items
-
-    Resume:
-    {text[:1500]}  # max 1500 characters
-    """
+    payload = {
+        "inputs": text[:1500],     #max 1500 characters
+        "parameters": {
+            "candidate_labels": [
+                "Technical Skills",
+                "Work Experience",
+                "Education",
+                "Projects",
+                "Certifications"
+            ],
+            "multi_label": True
+        }
+    }
 
     try:
-        response = requests.post(
-            API_URL,
-            headers=headers,
-            json={"inputs": prompt},
-            timeout=30
-        )
-        response.raise_for_status()
-        return response.json()[0]['generated_text']
-    except Exception as e:
-        return f"AI Analysis Unavailable: {str(e)}"
+        response = requests.post(API_URL, headers=headers, json=payload)
+        if response.status_code == 200:
+            results = response.json()
 
+            # analysis formatting
+            analysis = []
+            for label, score in zip(results['labels'], results['scores']):
+                if score > 0.5:
+                    analysis.append(f"{label}: {score:.0%} completeness")
+
+            if not analysis:
+                return "Analysis: Resume sections need significant improvement"
+
+            return "Resume Section Analysis:\n" + "\n".join(analysis)
+
+        return f"Analysis failed (HTTP {response.status_code}): {response.text[:200]}"
+    except Exception as e:
+        return f"Analysis error: {str(e)}"
 
 @app.post("/upload")
 async def upload_pdf(file: UploadFile = File(...)):
