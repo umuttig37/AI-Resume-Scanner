@@ -13,7 +13,7 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:3000"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -80,13 +80,13 @@ def calculate_ats_score(section_scores: dict) -> int:
 def format_analysis(scores: dict) -> str:
     analysis = []
     for section, score in scores.items():
-        if score >= 0.7:
-            analysis.append(f"strong {section} ({int(score*100)}%)")
-        elif score >= 0.4:
-            analysis.append(f"medium {section} ({int(score*100)}%)")
-        else:
-            analysis.append(f"weak {section} ({int(score*100)}%)")
-    return "resume analysis:\n" + "\n".join(analysis)
+        strength = (
+            "strong" if score >= 0.8
+            else "medium" if score >= 0.5
+            else "weak"
+        )
+        analysis.append(f"{strength} {section} ({int(score*100)}%)")
+    return "\n".join(analysis)
 
 @app.post("/upload")
 async def upload_pdf(file: UploadFile = File(...)):
