@@ -81,9 +81,9 @@ def format_analysis(scores: dict) -> str:
     analysis = []
     for section, score in scores.items():
         strength = (
-            "strong" if score >= 0.8
-            else "medium" if score >= 0.5
-            else "weak"
+            "Strong" if score >= 0.8
+            else "Medium" if score >= 0.5
+            else "Weak"
         )
         analysis.append(f"{strength} {section} ({int(score*100)}%)")
     return "\n".join(analysis)
