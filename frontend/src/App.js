@@ -9,6 +9,16 @@ function App() {
   const [showTips, setShowTips] = useState(false);
   const fileInputRef = useRef(null);
 
+const API_URL =
+  (typeof import.meta !== 'undefined' &&
+   import.meta.env &&
+   import.meta.env.VITE_API_URL) ||
+  process.env.REACT_APP_API_URL ||
+  (process.env.NODE_ENV === 'production'
+    ? 'https://ai-resume-scanner-backend-yv1x.onrender.com'
+    : 'http://localhost:8000');
+
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!file) return;
@@ -18,7 +28,7 @@ function App() {
     formData.append('file', file);
 
     try {
-      const response = await fetch('http://localhost:8000/upload', {
+      const response = await fetch(`${API_URL}/upload`, {
         method: 'POST',
         body: formData
       });
