@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/umuttig37/AI-Resume-Scanner/static/css/main.d663db70.css",
+    "main.js": "/umuttig37/AI-Resume-Scanner/static/js/main.0cea7645.js",
+    "static/js/453.376661aa.chunk.js": "/umuttig37/AI-Resume-Scanner/static/js/453.376661aa.chunk.js",
+    "index.html": "/umuttig37/AI-Resume-Scanner/index.html",
+    "main.d663db70.css.map": "/umuttig37/AI-Resume-Scanner/static/css/main.d663db70.css.map",
+    "main.0cea7645.js.map": "/umuttig37/AI-Resume-Scanner/static/js/main.0cea7645.js.map",
+    "453.376661aa.chunk.js.map": "/umuttig37/AI-Resume-Scanner/static/js/453.376661aa.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.d663db70.css",
+    "static/js/main.0cea7645.js"
+  ]
+}
