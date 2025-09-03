@@ -5,7 +5,6 @@ import os
 from backend.app.pdf_parser import extract_text_from_pdf
 from dotenv import load_dotenv
 import requests
-from .config import HF_API_TOKEN, HF_MODEL, SECTION_WEIGHTS
 
 load_dotenv()
 
@@ -17,6 +16,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+HF_API_TOKEN = os.getenv("HF_API_TOKEN")
+HF_MODEL = os.getenv("HF_MODEL")
+SECTION_WEIGHTS = os.getenv("SECTION_WEIGHTS")
 
 
 def analyze_resume_with_ai(text: str) -> dict:
