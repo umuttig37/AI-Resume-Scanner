@@ -1,3 +1,5 @@
+# note; live version is about come very soon 
+
 # AI Resume Scanner
 
 My tool gives your resume an AI checkup before it faces hiring systems:
